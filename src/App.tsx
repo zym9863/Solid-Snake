@@ -209,38 +209,11 @@ function App() {
     if (!ctx) return
 
     // 清空画布
-    ctx.fillStyle = '#2a2a2a'
+    ctx.fillStyle = '#0a0a0a'
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-    // 绘制蛇
-    ctx.fillStyle = '#4CAF50'
-    snake().forEach((segment, index) => {
-      if (index === 0) {
-        // 蛇头用不同颜色
-        ctx.fillStyle = '#66BB6A'
-      } else {
-        ctx.fillStyle = '#4CAF50'
-      }
-      ctx.fillRect(
-        segment.x * GRID_SIZE,
-        segment.y * GRID_SIZE,
-        GRID_SIZE - 1,
-        GRID_SIZE - 1
-      )
-    })
-
-    // 绘制食物
-    ctx.fillStyle = '#FF5722'
-    const currentFood = food()
-    ctx.fillRect(
-      currentFood.x * GRID_SIZE,
-      currentFood.y * GRID_SIZE,
-      GRID_SIZE - 1,
-      GRID_SIZE - 1
-    )
-
-    // 绘制网格线（可选）
-    ctx.strokeStyle = '#333'
+    // 绘制网格背景（更细致的效果）
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
     ctx.lineWidth = 0.5
     for (let i = 0; i <= CANVAS_WIDTH / GRID_SIZE; i++) {
       ctx.beginPath()
@@ -254,23 +227,105 @@ function App() {
       ctx.lineTo(CANVAS_WIDTH, i * GRID_SIZE)
       ctx.stroke()
     }
+
+    // 绘制蛇（增强视觉效果）
+    snake().forEach((segment, index) => {
+      const x = segment.x * GRID_SIZE
+      const y = segment.y * GRID_SIZE
+      
+      if (index === 0) {
+        // 蛇头 - 渐变效果和发光
+        const gradient = ctx.createRadialGradient(
+          x + GRID_SIZE/2, y + GRID_SIZE/2, 0,
+          x + GRID_SIZE/2, y + GRID_SIZE/2, GRID_SIZE/2
+        )
+        gradient.addColorStop(0, '#00ff87')
+        gradient.addColorStop(0.7, '#00d16e')
+        gradient.addColorStop(1, '#00a855')
+        
+        ctx.fillStyle = gradient
+        ctx.shadowColor = '#00ff87'
+        ctx.shadowBlur = 10
+        ctx.fillRect(x + 1, y + 1, GRID_SIZE - 2, GRID_SIZE - 2)
+        
+        // 眼睛
+        ctx.fillStyle = '#0a0a0a'
+        ctx.shadowBlur = 0
+        ctx.fillRect(x + 4, y + 4, 3, 3)
+        ctx.fillRect(x + GRID_SIZE - 7, y + 4, 3, 3)
+      } else {
+        // 蛇身 - 渐变效果
+        const intensity = Math.max(0.3, 1 - (index / snake().length))
+        const gradient = ctx.createLinearGradient(x, y, x + GRID_SIZE, y + GRID_SIZE)
+        gradient.addColorStop(0, `rgba(0, 255, 135, ${intensity})`)
+        gradient.addColorStop(1, `rgba(0, 168, 85, ${intensity * 0.8})`)
+        
+        ctx.fillStyle = gradient
+        ctx.shadowColor = '#00ff87'
+        ctx.shadowBlur = 3
+        ctx.fillRect(x + 2, y + 2, GRID_SIZE - 4, GRID_SIZE - 4)
+      }
+    })
+
+    // 绘制食物（增强视觉效果）
+    const currentFood = food()
+    const foodX = currentFood.x * GRID_SIZE
+    const foodY = currentFood.y * GRID_SIZE
+    
+    // 食物发光效果
+    const foodGradient = ctx.createRadialGradient(
+      foodX + GRID_SIZE/2, foodY + GRID_SIZE/2, 0,
+      foodX + GRID_SIZE/2, foodY + GRID_SIZE/2, GRID_SIZE/2
+    )
+    foodGradient.addColorStop(0, '#ff4757')
+    foodGradient.addColorStop(0.7, '#ff3742')
+    foodGradient.addColorStop(1, '#ff1e2d')
+    
+    ctx.fillStyle = foodGradient
+    ctx.shadowColor = '#ff4757'
+    ctx.shadowBlur = 15
+    
+    // 绘制圆形食物
+    ctx.beginPath()
+    ctx.arc(
+      foodX + GRID_SIZE/2, 
+      foodY + GRID_SIZE/2, 
+      (GRID_SIZE - 4) / 2, 
+      0, 
+      2 * Math.PI
+    )
+    ctx.fill()
+    
+    // 重置阴影
+    ctx.shadowBlur = 0
   })
 
   return (
     <div class="game-container">
-      <h1>贪吃蛇游戏</h1>
+      {/* 粒子背景效果 */}
+      <div class="particle" style="top: 10%; left: 10%;"></div>
+      <div class="particle" style="top: 20%; left: 80%;"></div>
+      <div class="particle" style="top: 60%; left: 20%;"></div>
+      <div class="particle" style="top: 80%; left: 60%;"></div>
+      
+      <h1>🐍 SOLID SNAKE</h1>
+      
       <div class="game-info">
-        <div class="score">分数: {score()}</div>
-        <div class="high-score">最高分: {highScore()}</div>
+        <div class={`score ${score() > 0 ? 'score-increase' : ''}`}>
+          🎯 分数: {score()}
+        </div>
+        <div class={`high-score ${score() === highScore() && score() > 0 ? 'new-record' : ''}`}>
+          最高分: {highScore()}
+        </div>
         <div class="game-status">
-          {gameState() === GameState.WAITING && '按空格键开始游戏'}
-          {gameState() === GameState.PLAYING && '游戏进行中'}
-          {gameState() === GameState.PAUSED && '游戏已暂停'}
-          {gameState() === GameState.GAME_OVER && '游戏结束！'}
+          {gameState() === GameState.WAITING && '🎮 按空格键开始游戏'}
+          {gameState() === GameState.PLAYING && '🎯 游戏进行中'}
+          {gameState() === GameState.PAUSED && '⏸️ 游戏已暂停'}
+          {gameState() === GameState.GAME_OVER && '💀 游戏结束！'}
         </div>
       </div>
 
-      <div class="game-board">
+      <div class={`game-board ${gameState() === GameState.GAME_OVER ? 'game-over-animation' : ''}`}>
         <canvas
           width={CANVAS_WIDTH}
           height={CANVAS_HEIGHT}
@@ -282,33 +337,33 @@ function App() {
         <div class="control-buttons">
           {gameState() === GameState.WAITING && (
             <button onClick={() => setGameState(GameState.PLAYING)} class="control-btn start-btn">
-              开始游戏
+              🚀 开始游戏
             </button>
           )}
           {gameState() === GameState.PLAYING && (
             <button onClick={() => setGameState(GameState.PAUSED)} class="control-btn pause-btn">
-              暂停游戏
+              ⏸️ 暂停游戏
             </button>
           )}
           {gameState() === GameState.PAUSED && (
             <button onClick={() => setGameState(GameState.PLAYING)} class="control-btn resume-btn">
-              继续游戏
+              ▶️ 继续游戏
             </button>
           )}
           {gameState() === GameState.GAME_OVER && (
             <button onClick={resetGame} class="control-btn restart-btn">
-              重新开始
+              🔄 重新开始
             </button>
           )}
           <button onClick={resetGame} class="control-btn reset-btn">
-            重置游戏
+            🔃 重置游戏
           </button>
         </div>
 
         <div class="instructions">
-          <p>使用方向键控制蛇的移动</p>
-          <p>空格键: 开始/暂停游戏</p>
-          <p>R键: 重新开始</p>
+          <p>🎮 使用方向键控制蛇的移动</p>
+          <p>⏯️ 空格键: 开始/暂停游戏</p>
+          <p>🔄 R键: 重新开始</p>
         </div>
       </div>
     </div>
